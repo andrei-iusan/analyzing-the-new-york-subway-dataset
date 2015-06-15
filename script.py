@@ -20,16 +20,19 @@ def predictions(dataframe, cost_history_filename=None):
     #                 dataframe.loc[:,'DATEn'])
     dummy_days = pd.get_dummies(dataframe['day_week'], prefix='day')
     dummy_hours = pd.get_dummies(dataframe['hour'], prefix='hour')
-    features = dataframe[['precipi', 'meantempi','fog']]
+    features = dataframe[['precipi','fog']]
+    features, mu, sigma = normalize_features(features)
     features = features.join(dummy_days).join(dummy_hours).join(dummy_units)
     # print "Not normalized features"
     # print features.head()
-    features, mu, sigma = normalize_features(features)
     # print "Normalized features"
     # print features.head()
     values = dataframe[['ENTRIESn_hourly']]
     m = len(values)
-
+    plt.figure()
+    # plt.scatter( values, features['precipi'])
+    plt.scatter(values, features['day_0'])
+    plt.show()
     features['ones'] = np.ones(m) # Add a column of 1s (y intercept)
     
     # Convert features and values to numpy arrays
@@ -130,27 +133,35 @@ def plot_hourly_entries(turnstile_weather, filename):
     of the actual data in the turnstile_weather dataframe
     '''
     df = turnstile_weather[['DATEn','hour','rain','ENTRIESn_hourly']]
-    #summing over all units
+    # summing over all units
     agg = df.groupby(['DATEn','hour','rain'], as_index= False).aggregate(np.sum)
+    # averaging over all days
     agg = df.groupby(['hour', 'rain'], as_index = False).aggregate(np.mean)
-    #average over days
-    #print agg
-    # # agg = agg[['hour', 'rain','ENTRIESn_hourly']]
-    # l = agg.groupby(['hour','rain'], as_index = False).aggregate(len)
-    # agg = agg.groupby(['hour','rain'], as_index = False).aggregate(np.sum)
-    # av = agg['ENTRIESn_hourly']/l['ENTRIESn_hourly']
-    # print agg,av
-    #plot = ggplot(agg, aes(x='hour',y='ENTRIESn_hourly', color='rain')) + geom_point() + geom_line() + ggtitle("Average entries by hour") + ylab("Entries")
     rain = agg[agg.rain==1][['ENTRIESn_hourly','hour']]
     clear = agg[agg.rain==0][['ENTRIESn_hourly','hour']]
     plt.subplots_adjust(hspace=.4)
     plt.subplot(211)
     plt.title('Average hourly entries per unit')
-    plt.plot(rain['hour'], rain['ENTRIESn_hourly'], color='b', label='rainy')
-    plt.plot(clear['hour'], clear['ENTRIESn_hourly'], color='y', label='clear')
-    plt.xlabel('hour')
+    w = .35
+    intervals = ['00-04','04-08','08-12','12-16','16-20','20-00']
+    hourly_rain = np.array(rain['ENTRIESn_hourly'])
+    hourly_rain = np.concatenate([hourly_rain[1:],[hourly_rain[0]]])
+    hourly_clear = np.array(clear['ENTRIESn_hourly'])
+    hourly_clear = np.concatenate([hourly_clear[1:],[hourly_clear[0]]])
+    
+    plt.bar(np.array(range(len(intervals))) + w/2,
+    	hourly_rain,
+    	color='b', label='rainy', width=w)
+    plt.bar(np.array(range(len(intervals))) + w+w/2,
+    	hourly_clear,
+    	color='y', label='clear', width=w)
+    # print rain[['ENTRIESn_hourly','hour']]
+    # print hourly_rain
+    plt.xticks(np.array(range(len(intervals)))+w+w/2,intervals)
+    # plt.plot(clear['hour'], clear['ENTRIESn_hourly'], color='y', label='clear')
+    plt.xlabel('hour interval')
     plt.ylabel('Average Entries')
-    plt.legend()
+    plt.legend(loc=0)
     plt.subplot(212)
     plt.title('Average daily entries')
     df = turnstile_weather[['DATEn','day_week','ENTRIESn_hourly']]
@@ -160,7 +171,6 @@ def plot_hourly_entries(turnstile_weather, filename):
     # clear = agg[agg.rain==0][['ENTRIESn_hourly','day_week']]
     data = agg2[['ENTRIESn_hourly','day_week']]
     day = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
-    w = .35
     plt.bar(np.array(data['day_week'])+w/2, data['ENTRIESn_hourly'], width=w, color='b')
     # plt.bar(np.array(clear['day_week'])+w, clear['ENTRIESn_hourly'], width=w, color='y', label='clear')
     plt.xticks(np.array(range(7))+w,day)
@@ -199,10 +209,12 @@ def main():
 	plt.ylabel("count")
 	plt.legend()
 	plt.subplot(212)
-	plt.hist((clear_w, rainy_w), bins = n_bins, label=('clear','rainy'), color=('y','b'), normed=True)
+	normed_clear = np.ones_like(clear_w)/len(clear_w)
+	normed_rainy = np.ones_like(rainy_w)/len(rainy_w)
+	plt.hist((clear_w, rainy_w), weights=(normed_clear, normed_rainy), bins = n_bins, label=('clear','rainy'), color=('y','b'))
 	plt.title("Histogram of Hourly Entries (b)")
 	plt.xlabel("Entries")
-	plt.ylabel("frequency")
+	plt.ylabel("Percent")
 	plt.legend()
 	plt.savefig("histogram of hourly entries")
 	plt.close()
