@@ -7,7 +7,7 @@ import datetime as dtime
 import scipy.stats as st
 import statsmodels.api as sm
 from scipy.stats import t
-def predictions(dataframe, cost_history_filename=None):
+def predictions(dataframe, cost_history_filename=None, plots=False):
     '''
     The NYC turnstile data is stored in a pandas dataframe called weather_turnstile.
     Using the information stored in the dataframe, let's predict the ridership of
@@ -20,19 +20,25 @@ def predictions(dataframe, cost_history_filename=None):
     #                 dataframe.loc[:,'DATEn'])
     dummy_days = pd.get_dummies(dataframe['day_week'], prefix='day')
     dummy_hours = pd.get_dummies(dataframe['hour'], prefix='hour')
-    features = dataframe[['precipi','fog']]
+    dummy_conds = pd.get_dummies(dataframe['conds'], prefix='conds')
+    features = dataframe[['precipi','fog','wspdi','pressurei']]
     features, mu, sigma = normalize_features(features)
-    features = features.join(dummy_days).join(dummy_hours).join(dummy_units)
+    features['pressure2']=features['pressurei']*features['pressurei']
+    features = features[['precipi','fog','wspdi','pressure2']]
+    features = features.join(dummy_days).join(dummy_hours).join(dummy_units).join(dummy_conds)
     # print "Not normalized features"
     # print features.head()
     # print "Normalized features"
     # print features.head()
     values = dataframe[['ENTRIESn_hourly']]
     m = len(values)
-    plt.figure()
-    # plt.scatter( values, features['precipi'])
-    plt.scatter(values, features['day_0'])
-    plt.show()
+    if plots:
+        for feat in features.columns:
+            plt.figure()
+            # plt.scatter( values, features['precipi'])
+            plt.scatter(features[feat],values)
+            plt.savefig('scatterplots/'+feat)
+            plt.close()
     features['ones'] = np.ones(m) # Add a column of 1s (y intercept)
     
     # Convert features and values to numpy arrays
@@ -150,11 +156,11 @@ def plot_hourly_entries(turnstile_weather, filename):
     hourly_clear = np.concatenate([hourly_clear[1:],[hourly_clear[0]]])
     
     plt.bar(np.array(range(len(intervals))) + w/2,
-    	hourly_rain,
-    	color='b', label='rainy', width=w)
+        hourly_rain,
+        color='b', label='rainy', width=w)
     plt.bar(np.array(range(len(intervals))) + w+w/2,
-    	hourly_clear,
-    	color='y', label='clear', width=w)
+        hourly_clear,
+        color='y', label='clear', width=w)
     # print rain[['ENTRIESn_hourly','hour']]
     # print hourly_rain
     plt.xticks(np.array(range(len(intervals)))+w+w/2,intervals)
@@ -191,81 +197,89 @@ def plot_hourly_entries(turnstile_weather, filename):
 
     plt.close()
     #agg['hour'], agg['ENTRIESn_hourly']
+def plot_entries_histogram(clear_w,rainy_w, n_bins):
+    plt.subplots_adjust(hspace=0.4)
+    plt.subplot(211)
+    plt.hist((clear_w, rainy_w), bins = n_bins, label=('clear','rainy'), color=('y','b'))
+    plt.title("Histogram of Hourly Entries (a)")
+    plt.xlabel("Entries")
+    plt.ylabel("count")
+    plt.legend()
+    plt.subplot(212)
+    normed_clear = np.ones_like(clear_w)/len(clear_w)
+    normed_rainy = np.ones_like(rainy_w)/len(rainy_w)
+    plt.hist((clear_w, rainy_w), weights=(normed_clear, normed_rainy), bins = n_bins, label=('clear','rainy'), color=('y','b'))
+    plt.title("Histogram of Hourly Entries (b)")
+    plt.xlabel("Entries")
+    plt.ylabel("Percent")
+    plt.legend()
+    plt.savefig("histogram of hourly entries")
+    plt.close()
+
+def CV_experiment(features, values, log):
+     indeces = np.array(range(len(features)))
+     np.random.seed(1)
+     np.random.shuffle(indeces)
+     k_cv = 10
+     test_set_len = len(features)/k_cv
+     R_sq_array = []
+     for k in range(k_cv):
+          train_i = indeces[range(0,k*test_set_len)+range((k+1)*test_set_len,len(features))]
+          test_i = indeces[range(k*test_set_len,(k+1)*test_set_len)]
+          model = sm.OLS(values[train_i], features[train_i])
+          results = model.fit()
+          predicted_values = results.predict(features[test_i])
+          r_sq = compute_r_squared(values[test_i], predicted_values)
+          R_sq_array.append(r_sq)
+          log.write(str(r_sq)+'\n')
+     Rm = np.mean(R_sq_array)
+     Rsig = np.std(R_sq_array)
+     conf_interval = t.interval(.95,len(R_sq_array)-1,loc=Rm, scale=Rsig)
+     log.write("\nAverage R squared\n")
+     log.write(str(Rm))
+     log.write("\nR squared STD\n")
+     log.write(str(Rsig))
+     log.write("\nR squared 95% confidence interval:\n")
+     log.write(str(conf_interval))
+    
 
 def main():
-	log = open("NYC stats.txt", 'w')
-	log.write("NYC statistics\n\n")
+    log = open("NYC stats.txt", 'w')
+    log.write("NYC statistics\n\n")
 
-	turnstile_weather = pd.read_csv("turnstile_weather_v2.csv")
-	turnstile_weather['datetime'] = turnstile_weather['DATEn'] + ' ' + turnstile_weather['TIMEn']
-	clear_w = turnstile_weather[turnstile_weather.rain==0]['ENTRIESn_hourly']
-	rainy_w = turnstile_weather[turnstile_weather.rain==1]['ENTRIESn_hourly']
-	n_bins = 40
-	plt.subplots_adjust(hspace=0.4)
-	plt.subplot(211)
-	plt.hist((clear_w, rainy_w), bins = n_bins, label=('clear','rainy'), color=('y','b'))
-	plt.title("Histogram of Hourly Entries (a)")
-	plt.xlabel("Entries")
-	plt.ylabel("count")
-	plt.legend()
-	plt.subplot(212)
-	normed_clear = np.ones_like(clear_w)/len(clear_w)
-	normed_rainy = np.ones_like(rainy_w)/len(rainy_w)
-	plt.hist((clear_w, rainy_w), weights=(normed_clear, normed_rainy), bins = n_bins, label=('clear','rainy'), color=('y','b'))
-	plt.title("Histogram of Hourly Entries (b)")
-	plt.xlabel("Entries")
-	plt.ylabel("Percent")
-	plt.legend()
-	plt.savefig("histogram of hourly entries")
-	plt.close()
-	log.write("saved histogram of hourly entries, with "+str(n_bins)+" bins\n=============\n\n")
-	u,p = st.mannwhitneyu(clear_w, rainy_w)
-	log.write("Mann Whitney test:\np="+ str(p)+ "\nU="+ str(u)+"\n\n")
-	log.write("mean_clear="+ str(np.mean(clear_w)) + "\n")
-	log.write("mean_rainy="+ str(np.mean(rainy_w)) + "\n\n")
+    turnstile_weather = pd.read_csv("turnstile_weather_v2.csv")
+    turnstile_weather['datetime'] = turnstile_weather['DATEn'] + ' ' + turnstile_weather['TIMEn']
+    clear_w = turnstile_weather[turnstile_weather.rain==0]['ENTRIESn_hourly']
+    rainy_w = turnstile_weather[turnstile_weather.rain==1]['ENTRIESn_hourly']
+    n_bins=40
+    plot_entries_histogram(clear_w, rainy_w,n_bins)
+    log.write("saved histogram of hourly entries, with "+str(n_bins)+" bins\n=============\n\n")
+    u,p = st.mannwhitneyu(clear_w, rainy_w)
+    log.write("Mann Whitney test (two tailed test):\np="+ str(2*p)+ "\nU="+ str(u)+"\n\n")
+    log.write("mean_clear="+ str(np.mean(clear_w)) + "\n")
+    log.write("mean_rainy="+ str(np.mean(rainy_w)) + "\n\n")
 
-	turnstile_weather['datetime'] = turnstile_weather['DATEn'] + ' ' + turnstile_weather['TIMEn']
-	plot_hourly_entries(turnstile_weather, "hourly entries.png")
+    turnstile_weather['datetime'] = turnstile_weather['DATEn'] + ' ' + turnstile_weather['TIMEn']
+    plot_hourly_entries(turnstile_weather, "hourly entries.png")
 
-	features, values = predictions(turnstile_weather)
-	model = sm.OLS(values, features)
-	results = model.fit()
-	predicted_values = results.predict(features)
-	r_squared = compute_r_squared(turnstile_weather['ENTRIESn_hourly'], predicted_values) 
-	log.write ("R2 value: "+str(r_squared)+'\n\n')
-	# Theta values
-	theta = results.params
-	log.write("Theta values:\n")
-	log.write('precipi: '+str(theta[0])+'\n')
-	log.write('meantempi: '+str(theta[1])+'\n')
-	log.write('fog: '+str(theta[2])+'\n\n')
-	# k fold cross validation
-	log.write("cross validation experiment\n\nR squared:\n")
-	indeces = np.array(range(len(features)))
-	np.random.seed(1)
-	np.random.shuffle(indeces)
-	k_cv = 10
-	test_set_len = len(features)/k_cv
-	R_sq_array = []
-	for k in range(k_cv):
-		train_i = indeces[range(0,k*test_set_len)+range((k+1)*test_set_len,len(features))]
-		test_i = indeces[range(k*test_set_len,(k+1)*test_set_len)]
-		model = sm.OLS(values[train_i], features[train_i])
-		results = model.fit()
-		predicted_values = results.predict(features[test_i])
-		r_sq = compute_r_squared(turnstile_weather['ENTRIESn_hourly'][test_i], predicted_values)
-		R_sq_array.append(r_sq)
-		log.write(str(r_sq)+'\n')
-	Rm = np.mean(R_sq_array)
-	Rsig = np.std(R_sq_array)
-	conf_interval = t.interval(.95,len(R_sq_array)-1,loc=Rm, scale=Rsig)
-	log.write("\nAverage R squared\n")
-	log.write(str(Rm))
-	log.write("\nR squared STD\n")
-	log.write(str(Rsig))
-	log.write("\nR squared 95% confidence interval:\n")
-	log.write(str(conf_interval))
-	log.close()
+    features, values = predictions(turnstile_weather, plots=True)
+    model = sm.OLS(values, features)
+    results = model.fit()
+    predicted_values = results.predict(features)
+    r_squared = compute_r_squared(turnstile_weather['ENTRIESn_hourly'], predicted_values) 
+    log.write ("R2 value: "+str(r_squared)+'\n\n')
+    # Theta values
+    theta = results.params
+    #'precipi','fog','wspdi','pressure2'
+    log.write("Theta values:\n")
+    log.write('precipi: '+str(theta[0])+'\n')
+    log.write('fog: '+str(theta[1])+'\n')
+    log.write('wspdi: '+str(theta[2])+'\n')
+    log.write('pressure2: '+str(theta[3])+'\n\n')
+    # k fold cross validation
+    log.write("cross validation experiment\n\nR squared:\n")
+    CV_experiment(features, values, log)
+    log.close()
 
 if __name__ == '__main__':
-	main()
+    main()

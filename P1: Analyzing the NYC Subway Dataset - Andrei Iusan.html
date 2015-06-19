@@ -153,32 +153,42 @@ time-of-day and number of entries is nonlinear. Therefore, using
 linear regression with 'hour' or 'day_week' as a feature will not
 work properly. It is better to aggregate the values in time intervals
 and use dummy variables for those intervals. I included dummy
-variables for subway unit, weekday and time of day. This approach
-increased the R<sup>2</sup> value up to 0.54.</p>
+variables for subway unit, weekday and time of day.</p>
+<p>In order to select the best variables that could be used as predictors,
+I drew scatterplots of all predictor variables (of explanatory variables)
+versus the number of entries. It is best to include in a linear model
+only variables that follow an approximately linear pattern with respect 
+to the response variable. I observed that temperature does not follow a
+linear pattern so I excluded that. Also, pressure appears quadratic.
+I dropped the pressure variable and replaced it with the squared value of
+the pressure.</p>
 <p>It is interesting to note that since we have a very limited
 dataset, the average for the day of Monday is pulled down by the
 national <a href="http://en.wikipedia.org/wiki/Memorial_Day">Memorial
 Day</a> that is celebrated on the last Monday of May. This suggests
 that perhaps a more accurate prediction could be made if we take into
  account not only the weekday, but also the day of the year, or
-perhaps another feature that describes the day as being a national
-holiday or not.</p>
+perhaps another binary variable that describes the day as being a national
+holiday.</p>
+<p>I obtained an R<sup>2</sup> value of 0.54
 <h2 class="western">2.4 Weights</h2>
-<p>The output variable, the number of entries for a particular subway
-unit at a particular moment in time varies from 0 to 35,000
-entries. We should note that the number of entries is computed over a
-time interval of 4 hours.</p>
-<p>Due to this fact, the weights of different predictors have values
-that vary very much. The weights for weather values are the
-following:</p>
+<p>The output variable (or response variable), the number of entries
+for a particular subway unit at a particular moment in time varies from
+0 to 35,000 entries. Due to this fact, the weights of different 
+predictors have values that vary very much. The weights for weather 
+values are the following:</p>
 <ul>
 	<li/>
-<p style="margin-bottom: 0in">precipi: -37.602</p>
+<p style="margin-bottom: 0in">precipi: -117.366997884</p>
 	<li/>
-<p style="margin-bottom: 0in">meantempi: -112.70</p>
+<p style="margin-bottom: 0in">fog: -80.4189014166</p>
 	<li/>
-<p style="margin-bottom: 0in">fog: -3.0455</p>
+<p style="margin-bottom: 0in">wspdi: 33.5845241393</p>
+	<li/>
+<p style="margin-bottom: 0in">pressure2: -20.6362939134</p>
 </ul>
+
+
 <p>On the other hand, the theta values for the dummy features are
 usually on the order of 10<sup>12</sup> to 10<sup>14</sup>.</p>
 <h2 class="western">2.5 R<sup>2</sup></h2>
