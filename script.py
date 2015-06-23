@@ -262,7 +262,7 @@ def main():
     turnstile_weather['datetime'] = turnstile_weather['DATEn'] + ' ' + turnstile_weather['TIMEn']
     plot_hourly_entries(turnstile_weather, "hourly entries.png")
 
-    features, values = predictions(turnstile_weather, plots=True)
+    features, values = predictions(turnstile_weather, plots=False)
     model = sm.OLS(values, features)
     results = model.fit()
     predicted_values = results.predict(features)
@@ -270,7 +270,6 @@ def main():
     log.write ("R2 value: "+str(r_squared)+'\n\n')
     # Theta values
     theta = results.params
-    #'precipi','fog','wspdi','pressure2'
     log.write("Theta values:\n")
     log.write('precipi: '+str(theta[0])+'\n')
     log.write('fog: '+str(theta[1])+'\n')
@@ -278,7 +277,12 @@ def main():
     log.write('pressure2: '+str(theta[3])+'\n\n')
     # k fold cross validation
     log.write("cross validation experiment\n\nR squared:\n")
-    CV_experiment(features, values, log)
+    # CV_experiment(features, values, log)
+    # st.probplot(values-predicted_values,plot=plt)
+    pp_x = sm.ProbPlot(np.array(values), fit=True)
+    pp_y = sm.ProbPlot(np.array(predicted_values), fit=True)
+    fig3 = pp_x.qqplot(other=pp_y, line='45')
+    plt.savefig("qq plot")
     log.close()
 
 if __name__ == '__main__':
