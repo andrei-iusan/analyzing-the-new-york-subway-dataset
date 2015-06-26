@@ -261,7 +261,7 @@ def main():
     turnstile_weather['datetime'] = turnstile_weather['DATEn'] + ' ' + turnstile_weather['TIMEn']
     plot_hourly_entries(turnstile_weather, "hourly entries.png")
 
-    features, values = predictions(turnstile_weather, plots=True)
+    features, values = predictions(turnstile_weather, plots=False)
     model = sm.OLS(values, features)
     results = model.fit()
     predicted_values = results.predict(features)
