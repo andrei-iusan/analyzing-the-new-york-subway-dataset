@@ -214,9 +214,10 @@ description for the real phenomena. If the model is accurate,
 it can be used to predict future events.</p>
 <p><b>Prediction</b> involves using a model to predict future events.
 Prediction is related to modeling, however, measuring the prediction
-accuracy of a model is much harder than measuring fitness. In order 
+accuracy of a model is more difficult than measuring fitness. In order 
 to measure fitness of a model, one has to compare the prediction
-of the model with the real data.</p>
+of the model with real data. A model may describe a dataset very well,
+but it may fail to generalize to other datasets.</p>
 <p>Figure 5 shows the accuracy of the model with respect to the real data.
 We can clearly see that the model is unable to capture the variability of
 the data. Moreover, the Linear model outputs negative values. Figure 6 shows the residuals. We can see that for larger values, the residuals get larger.
@@ -227,6 +228,7 @@ to set up an experiment to appreciate how good the model might behave in a
 real world setting.</p>
 <p>I desighed a cross-validation experiment that is described below
 in pseudo-code.</p>
+<font face='mono'>
 <ol>
 	<li/>
 <p>Shuffle the data</p>
@@ -250,6 +252,7 @@ in pseudo-code.</p>
 	<li/>
 <p>Compute R<sup>2</sup> average and std</p>
 </ol>
+</font>
 <p>The results of this experiment are the following:</p>
 <p>R<sup>2</sup><sub>mean</sub>= 0.549</p>
 <p>R<sup>2</sup><sub>std</sub>= 0.039</p>
@@ -357,7 +360,7 @@ of this model gave an R<sup>2</sup> value of 0.54. This is significant
 enough to suggest there is a correlation between the input variables
 and the output, and this correlation can be used for predictive purposes,
 but the correlation is rather low. As observed from Figure 5 and Figure 6,
-The linear model does not capture the variability of the data well.</p>
+the linear model does not capture the variability of the data well.</p>
 <h1>Section 5. Reflection</h1>
 <h2 class="western">Shortcomings</h2>
 <h3 style="margin-top: 0.17in; page-break-after: avoid"><font face="Albany, sans-serif" size="4" style="font-size: 14pt">Dataset</font></h3>
@@ -366,7 +369,7 @@ of May. Therefore, the computed model has limited use, it is most likely
 unsuitable for predicting ridership during winter or hot summer days.
 Also, the granularity of the values is quite large. The entries are
 summed over 4 hour intervals. It may be possible to obtain a more
-accurate prediction if we have entries for every hour, or for every
+accurate prediction if the data contains entries for every hour, or for every
 10 minutes, or even in real time, for example having a dataset with
 every entry and the timestamp associated.</p>
 <h3 style="margin-top: 0.17in; page-break-after: avoid"><font face="Albany, sans-serif" size="4" style="font-size: 14pt">Analysis</font></h3>
@@ -375,7 +378,7 @@ not suited for this particular application. The variability of the
 data is very high and some relations are clearly not linear. In attempting
 to account for the non-linearity of variables like time-of-day, I splitted
 the variable into multiple dummy-variables. This approach increased the
-number of features and included many categorical variables. Although
+number of features and created many categorical variables. Although
 this approach may improve the model slightly, the linear model is not
 suited for categorical variables.
 For an accurate prediction, other non-linear models should be investigated.
