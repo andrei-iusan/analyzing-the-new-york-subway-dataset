@@ -40,7 +40,6 @@ def predictions(dataframe, cost_history_filename=None, plots=False):
             plt.savefig('scatterplots/'+feat)
             plt.close()
     features['ones'] = np.ones(m) # Add a column of 1s (y intercept)
-    
     # Convert features and values to numpy arrays
     features_array = np.array(features)
     values_array = np.array(values).flatten()
@@ -262,7 +261,7 @@ def main():
     turnstile_weather['datetime'] = turnstile_weather['DATEn'] + ' ' + turnstile_weather['TIMEn']
     plot_hourly_entries(turnstile_weather, "hourly entries.png")
 
-    features, values = predictions(turnstile_weather, plots=False)
+    features, values = predictions(turnstile_weather, plots=True)
     model = sm.OLS(values, features)
     results = model.fit()
     predicted_values = results.predict(features)
@@ -276,13 +275,24 @@ def main():
     log.write('wspdi: '+str(theta[2])+'\n')
     log.write('pressure2: '+str(theta[3])+'\n\n')
     # k fold cross validation
-    log.write("cross validation experiment\n\nR squared:\n")
+    log.write("cross validation experiment\n\nR squared:\n") 
+    # uncomment the following line to start the experiment
     # CV_experiment(features, values, log)
-    # st.probplot(values-predicted_values,plot=plt)
-    pp_x = sm.ProbPlot(np.array(values), fit=True)
-    pp_y = sm.ProbPlot(np.array(predicted_values), fit=True)
-    fig3 = pp_x.qqplot(other=pp_y, line='45')
-    plt.savefig("qq plot")
+    plt.figure()
+    plt.title("Model Accuracy")
+    plt.scatter(values, predicted_values)
+    plt.xlabel("Real Data (Number of entries)")
+    plt.ylabel("Modeled Data (Predicted number of entries)")
+    plt.plot(range(35000),range(35000), color='r')
+    plt.savefig("Accuracy.png")
+    plt.close()
+    plt.figure()
+    plt.title("Residuals")
+    plt.scatter(values, (values-predicted_values))
+    plt.xlabel("Real Data (Number of Entries)")
+    plt.ylabel("Residuals")
+    plt.savefig("Residuals")
+    plt.close()
     log.close()
 
 if __name__ == '__main__':

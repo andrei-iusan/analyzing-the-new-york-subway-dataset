@@ -211,26 +211,22 @@ well does it predict?</h2>
 <p><b>Modeling</b> is the process of describing theoreticaly a phenomena 
 (usually a natural phenomena). It involves finding a mathematical
 description for the real phenomena. If the model is accurate,
-it can be used to predict future events. As a classic example, let's
-consider the simple Newtonian mechanics model. Mechanics describes
-the interactions between physical objects. The model can be used
-to predict the trajectory of a cannon projectile for example.
-However, the same model is unfit for the GPS. In this case, due 
-to the higher speed and the  high accuracy required, a more complex
-model has to be used (relatistic mechanics).</p>
+it can be used to predict future events.</p>
 <p><b>Prediction</b> involves using a model to predict future events.
 Prediction is related to modeling, however, measuring the prediction
 accuracy of a model is much harder than measuring fitness. In order 
 to measure fitness of a model, one has to compare the prediction
-of the model with the real data. For prediction purposes, the real
-value is unknown at the moment the prediction is made.</p>
-<p>This model describes the data to some extent, given the R score of 0.54.
-However, the R score alone does not tell us anything about the
-model's predictive value. In order to evaluate the predictive value
-of a linear regression model for this dataset we need to set up a
-different experiment.</p>
-<p>The R<sup>2</sup> value can still be used to measure prediction accuracy,
-but I followed a procedure that is described below:</p>
+of the model with the real data.</p>
+<p>Figure 5 shows the accuracy of the model with respect to the real data.
+We can clearly see that the model is unable to capture the variability of
+the data. Moreover, the Linear model outputs negative values. Figure 6 shows the residuals. We can see that for larger values, the residuals get larger.
+This sugests that the output variable has a non-linear behavor.</p>
+<p>This model describes the data to some extent, but in order to better
+assess a statistic like R<sup>2</sup> for predictive purposes, we need
+to set up an experiment to appreciate how good the model might behave in a
+real world setting.</p>
+<p>I desighed a cross-validation experiment that is described below
+in pseudo-code.</p>
 <ol>
 	<li/>
 <p>Shuffle the data</p>
@@ -263,7 +259,8 @@ but I followed a procedure that is described below:</p>
 	For our experiment, there are 10 samples, therefore I applied the t test with 9 degrees
 	of freedom.</p>
 <p>The 95% confidence interval for R<sup>2</sup> is: (0.46, 0.63).</p>
-<p>This is the code that led to this result:</p>
+<p>The code that led to this result is presented here for replication
+purposes:</p>
 <p><code>
 	<!-- HTML generated using hilite.me --><div style="background: #ffffff; overflow:auto;width:auto;border:solid gray;border-width:.1em .1em .1em .8em;padding:.2em .6em;"><pre style="margin: 0; line-height: 125%">	<span style="color: #008800; font-weight: bold">from</span> <span style="color: #0e84b5; font-weight: bold">scipy.stats</span> <span style="color: #008800; font-weight: bold">import</span> t
 	<span style="color: #008800; font-weight: bold">import</span> <span style="color: #0e84b5; font-weight: bold">numpy</span> <span style="color: #008800; font-weight: bold">as</span> <span style="color: #0e84b5; font-weight: bold">np</span>
@@ -325,6 +322,18 @@ but I followed a procedure that is described below:</p>
 		<img src="scatterplots/pressure2.png" name="Image1" align="left" width="549" height="500" border="0"><br clear="left"><font size="3" style="font-size: 12pt"><i>Figure
 	4b: Scatterplot of pressure<sup>2</sup> vs Entries</i></font></p>
 </span></p>
+	<p>
+	<span id="Frame6" dir="ltr" style="float: right; width: 5.72in; height: 4.29in; border: none; padding: 0in; background: #ffffff">
+	<p style="margin-top: 0.08in; margin-bottom: 0.08in">
+		<img src="Accuracy.png" name="Image1" align="left" width="549" height="500" border="0"><br clear="left"><font size="3" style="font-size: 12pt"><i>Figure
+	5: The model's predicted variable versus the real variable (ENTRIESn_hourly). The red line is the identity function. The closer the points are to the red line, the more accurate the prediction. The difference between the line and a point represents the residual error of that point.
+</span></p>
+	<p>
+	<span id="Frame7" dir="ltr" style="float: right; width: 5.72in; height: 4.29in; border: none; padding: 0in; background: #ffffff">
+	<p style="margin-top: 0.08in; margin-bottom: 0.08in">
+		<img src="Residuals.png" name="Image1" align="left" width="549" height="500" border="0"><br clear="left"><font size="3" style="font-size: 12pt"><i>Figure
+	6: Residuals versus ENTRIESn_hourly.
+</span></p>
 <h1>Section 4. Conclusion</h1>
 <p>From the analysis conducted so far we can state that more people
 ride the NYC subway when it is raining. This can be observed first
@@ -347,12 +356,13 @@ and weather, the approximate number of riders. The implementation
 of this model gave an R<sup>2</sup> value of 0.54. This is significant
 enough to suggest there is a correlation between the input variables
 and the output, and this correlation can be used for predictive purposes,
-but the correlation is rather low.</p>
+but the correlation is rather low. As observed from Figure 5 and Figure 6,
+The linear model does not capture the variability of the data well.</p>
 <h1>Section 5. Reflection</h1>
 <h2 class="western">Shortcomings</h2>
 <h3 style="margin-top: 0.17in; page-break-after: avoid"><font face="Albany, sans-serif" size="4" style="font-size: 14pt">Dataset</font></h3>
 <p>The dataset used for this project included entries only for the month
-of May. Therefore, the computed model has limited use, it may be
+of May. Therefore, the computed model has limited use, it is most likely
 unsuitable for predicting ridership during winter or hot summer days.
 Also, the granularity of the values is quite large. The entries are
 summed over 4 hour intervals. It may be possible to obtain a more
@@ -360,14 +370,15 @@ accurate prediction if we have entries for every hour, or for every
 10 minutes, or even in real time, for example having a dataset with
 every entry and the timestamp associated.</p>
 <h3 style="margin-top: 0.17in; page-break-after: avoid"><font face="Albany, sans-serif" size="4" style="font-size: 14pt">Analysis</font></h3>
-<p>It is not clear whether all the relations are linear. It may be
-the case that some relations are non-linear. As an extreme example,
-it may be the case that when temperature is very low, more people
-ride the subway than when the temperature is warm, but also when
-temperature is very high, more people may ride the subway. It should
-be noted that this is only a hypothesis based on intuition, not a
-tested fact, but it is very likely that the model implemented here is not
-very accurate and that it is not suited to represent or predict ridership 
-in other periods of the year.</p>
+<p>By examining the residuals it is clear that the linear model is 
+not suited for this particular application. The variability of the
+data is very high and some relations are clearly not linear. In attempting
+to account for the non-linearity of variables like time-of-day, I splitted
+the variable into multiple dummy-variables. This approach increased the
+number of features and included many categorical variables. Although
+this approach may improve the model slightly, the linear model is not
+suited for categorical variables.
+For an accurate prediction, other non-linear models should be investigated.
+</p>
 </body>
 </html>
